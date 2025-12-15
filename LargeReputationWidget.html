@@ -19,13 +19,14 @@
 
         html, body {
             min-height: 100%;
+            height: auto; /* Ensure height can grow */
         }
 
         body {
             background-color: transparent;
             font-family: 'Share Tech Mono', monospace;
             color: var(--neon-cyan);
-            overflow-y: auto; /* Allow scrolling for the list */
+            overflow-y: visible; /* Remove internal scrollbar, allow full height */
             overflow-x: hidden;
         }
 
