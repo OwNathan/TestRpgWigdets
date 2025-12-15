@@ -101,31 +101,35 @@
         }
     </style>
 </head>
-<body class="flex items-center justify-center min-h-screen bg-black p-4">
+<body class="flex items-center justify-center min-h-screen bg-black p-2 sm:p-4">
 
     <!-- Widget Container -->
-    <div class="cyber-card w-full max-w-md p-6 relative">
+    <!-- Added responsive padding (p-3 on mobile, p-6 on desktop) -->
+    <div class="cyber-card w-full max-w-md p-3 sm:p-6 relative">
         <div class="scanlines"></div>
         
         <!-- Header -->
-        <div class="flex justify-between items-end mb-2 border-b border-cyan-900 pb-2 relative z-20">
-            <div class="flex-grow overflow-hidden mr-4">
-                <h2 class="text-xs text-cyan-700 tracking-widest mb-1">DATA_STREAM // <span id="data-id">LOADING...</span></h2>
-                <!-- Faction Name Container: Added overflow-hidden and w-full to force constraint -->
-                <div class="h-8 flex items-end w-full overflow-hidden">
-                    <h1 class="text-2xl font-bold tracking-wider text-white glitch-text uppercase" id="faction-name">
+        <div class="flex justify-between items-end mb-1 sm:mb-2 border-b border-cyan-900 pb-1 sm:pb-2 relative z-20">
+            <div class="flex-grow overflow-hidden mr-2 sm:mr-4">
+                <!-- Responsive text sizes -->
+                <h2 class="text-[10px] sm:text-xs text-cyan-700 tracking-widest mb-1">DATA_STREAM // <span id="data-id">LOADING...</span></h2>
+                <!-- Faction Name Container: Responsive height -->
+                <div class="h-6 sm:h-8 flex items-end w-full overflow-hidden">
+                    <h1 class="text-xl sm:text-2xl font-bold tracking-wider text-white glitch-text uppercase" id="faction-name">
                         CONNECTING...
                     </h1>
                 </div>
             </div>
             <div class="text-right flex-shrink-0">
-                <div class="text-xs text-pink-500 font-bold tracking-widest uppercase">PARTY_REP</div>
-                <div class="text-3xl font-bold" id="numeric-display">--</div>
+                <div class="text-[10px] sm:text-xs text-pink-500 font-bold tracking-widest uppercase">PARTY_REP</div>
+                <!-- Responsive Score Size -->
+                <div class="text-2xl sm:text-3xl font-bold" id="numeric-display">--</div>
             </div>
         </div>
 
         <!-- The Split Bar (-5 to +5) -->
-        <div class="h-8 w-full flex items-center justify-center my-4 px-1 relative z-20 overflow-hidden">
+        <!-- Responsive height and margin -->
+        <div class="h-6 sm:h-8 w-full flex items-center justify-center my-2 sm:my-4 px-1 relative z-20 overflow-hidden">
             
             <!-- Negative Side (Right aligned inside left box to grow from center) -->
             <div class="flex-1 flex justify-end space-x-1 space-x-reverse h-full" id="bar-neg-container">
@@ -143,15 +147,15 @@
         </div>
 
         <!-- Footer / Description -->
-        <div class="flex justify-between items-center mt-2 text-xs relative z-20 min-h-[1.5em]">
+        <div class="flex justify-between items-center mt-1 sm:mt-2 text-[10px] sm:text-xs relative z-20 min-h-[1.5em]">
             <div class="text-cyan-300 font-bold uppercase tracking-wide w-full truncate" id="desc-text">
                 ESTABLISHING LINK...
             </div>
         </div>
         
-        <!-- Decorative corner bits -->
-        <div class="absolute top-0 right-0 w-8 h-8 border-t-2 border-r-2 border-cyan-500 opacity-50"></div>
-        <div class="absolute bottom-0 left-0 w-8 h-8 border-b-2 border-l-2 border-pink-500 opacity-50"></div>
+        <!-- Decorative corner bits: Responsive sizing -->
+        <div class="absolute top-0 right-0 w-4 h-4 sm:w-8 sm:h-8 border-t-2 border-r-2 border-cyan-500 opacity-50"></div>
+        <div class="absolute bottom-0 left-0 w-4 h-4 sm:w-8 sm:h-8 border-b-2 border-l-2 border-pink-500 opacity-50"></div>
     </div>
 
     <script>
@@ -225,9 +229,6 @@
             const clampedRep = Math.max(-5, Math.min(5, rep));
 
             // Create 5 segments for NEGATIVE side (Right to Left visually)
-            // Visual Order (using justify-end): [5] [4] [3] [2] [1] | Center
-            // 1 is closest to center (representing -1)
-            
             // Negative Loop: 5 down to 1
             for (let i = 5; i >= 1; i--) {
                 const seg = document.createElement('div');
@@ -276,7 +277,10 @@
 
         // Text Resizer
         function resizeTextToFit(el) {
-            let fontSize = 1.5; // Start at 1.5rem
+            // Responsive Max Size: 1.25rem on mobile, 1.5rem on larger screens
+            const maxFontSize = window.innerWidth < 640 ? 1.25 : 1.5;
+            
+            let fontSize = maxFontSize; 
             el.style.fontSize = fontSize + 'rem';
             const parent = el.parentElement;
             
