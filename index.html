@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RPG Campaign Tracker</title>
+    
+    <script src="https://ronennes.github.io/RPGUI/rpgui/rpgui.min.js"></script>
+    <link href="https://ronennes.github.io/RPGUI/rpgui/rpgui.min.css" rel="stylesheet">
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.0/papaparse.min.js"></script>
+
+    <style>
+        body {
+            background-color: #222;
+            color: white;
+            padding: 20px;
+            font-family: 'Press Start 2P', cursive;
+            overflow-x: hidden; /* Prevents scrollbar issues in embed */
+        }
+        
+        .character-card {
+            margin-bottom: 25px;
+            padding: 20px !important; /* Force padding */
+        }
+
+        /* Customizing the Progress Bar color */
+        .rpgui-progress-fill {
+            background-color: #d32f2f !important; /* Dark Red */
+            transition: width 0.5s ease-in-out;
+        }
+
+        .stat-line {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 5px;
+            font-size: 0.8em;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="tracker-container" class="rpgui-content">
+        <p style="color: #aaa; text-align: center;">Loading...</p>
+    </div>
+
+    <script>
+        // --- CONFIGURATION ---
+        // 1. File > Share > Publish to web > CSV
+        // 2. Paste the link inside the quotes below:
+        const sheetURL = "YOUR_GOOGLE_SHEET_CSV_LINK_HERE";
+
+        function init() {
+            Papa.parse(sheetURL, {
+                download: true,
+                header: true, 
+                skipEmptyLines: true,
+                complete: function(results) {
+                    renderCards(results.data);
+                },
+                error: function(err) {
+                    document.getElementById('tracker-container').innerHTML = '<p style="color:red">Error loading data</p>';
+                    console.error(err);
+                }
+            });
+        }
+
+        function renderCards(data) {
+            const container = document.getElementById('tracker-container');
+            container.innerHTML = ''; 
+
+            data.forEach(char => {
+                // Ensure the row has a Name, otherwise skip
+                if(!char.Name) return;
+
+                // Math for HP Bar
+                // Ensure your Sheet has columns named exactly: HP and MaxHP
+                let current = parseInt(char.HP);
+                let max = parseInt(char.MaxHP);
+                let percent = (current / max) * 100;
+                if (percent > 100) percent = 100;
+                if (percent < 0) percent = 0;
+
+                const cardHTML = `
+                    <div class="rpgui-container framed character-card">
+                        <div class="stat-line">
+                            <span style="font-size:1.2em; font-weight:bold;">${char.Name}</span>
+                            <span>Lvl ${char.Level || '?'} ${char.Class || ''}</span>
+                        </div>
+                        
+                        <div class="rpgui-progress">
+                             <div class="rpgui-progress-track">
+                                <div class="rpgui-progress-fill" style="width: ${percent}%;"></div>
+                             </div>
+                             <div class="rpgui-progress-left-edge"></div>
+                             <div class="rpgui-progress-right-edge"></div>
+                        </div>
+                        <div style="text-align: center; font-size: 0.7em; margin-top: 5px;">
+                            ${current} / ${max} HP
+                        </div>
+                        
+                        <hr class="golden">
+                        <p style="font-size:0.8em; line-height: 1.4;">${char.Notes || ''}</p>
+                    </div>
+                `;
+                
+                container.innerHTML += cardHTML;
+            });
+        }
+
+        // Load immediately
+        init();
+        // Refresh every 10 seconds
+        setInterval(init, 10000);
+
+    </script>
+</body>
+</html>
