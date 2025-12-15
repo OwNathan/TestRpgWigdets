@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Party Reputation Master List</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts: Orbitron for headers, Share Tech Mono for data -->
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+    
+    <style>
+        :root {
+            --neon-cyan: #00f3ff;
+            --neon-pink: #ff00ff;
+            --bg-dark: #050505;
+            --bg-panel: #0a0f14;
+        }
+
+        html, body {
+            min-height: 100%;
+        }
+
+        body {
+            background-color: transparent;
+            font-family: 'Share Tech Mono', monospace;
+            color: var(--neon-cyan);
+            overflow-y: auto; /* Allow scrolling for the list */
+            overflow-x: hidden;
+        }
+
+        /* Cyberpunk Card Container */
+        .cyber-card {
+            background-color: var(--bg-panel);
+            border: 1px solid rgba(0, 243, 255, 0.3);
+            position: relative;
+            /* Angled corners using clip-path */
+            clip-path: polygon(
+                0 10px, 
+                10px 0, 
+                100% 0, 
+                100% calc(100% - 10px), 
+                calc(100% - 10px) 100%, 
+                0 100%
+            );
+            box-shadow: 0 0 10px rgba(0, 243, 255, 0.1);
+        }
+
+        /* Scanline effect overlay */
+        .scanlines {
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: linear-gradient(
+                to bottom,
+                rgba(255,255,255,0),
+                rgba(255,255,255,0) 50%,
+                rgba(0,0,0,0.2) 50%,
+                rgba(0,0,0,0.2)
+            );
+            background-size: 100% 4px;
+            pointer-events: none;
+            z-index: 50; /* Above content but below interactions if any */
+            opacity: 0.15;
+        }
+
+        /* Segmented Bar Styling */
+        .segment {
+            height: 100%;
+            transform: skewX(-20deg);
+            border: 1px solid rgba(0, 243, 255, 0.2);
+            background: rgba(0, 0, 0, 0.5);
+            transition: all 0.3s ease;
+            opacity: 0.3;
+        }
+
+        /* Active Positive Segment (Right side) */
+        .segment.active-pos {
+            background: var(--neon-cyan);
+            box-shadow: 0 0 8px var(--neon-cyan);
+            border-color: #fff;
+            opacity: 1;
+        }
+
+        /* Active Negative Segment (Left side) */
+        .segment.active-neg {
+            background: var(--neon-pink);
+            box-shadow: 0 0 10px var(--neon-pink);
+            border-color: #fff;
+            opacity: 1;
+        }
+
+        /* Center divider */
+        .center-divider {
+            width: 4px;
+            height: 100%;
+            background-color: #333;
+            margin: 0 4px;
+            transform: skewX(-20deg);
+        }
+
+        /* Glitch Text */
+        .glitch-text {
+            font-family: 'Orbitron', sans-serif;
+            text-shadow: 1px 0 var(--neon-pink), -1px 0 var(--neon-cyan);
+            white-space: nowrap; 
+        }
+
+        /* Scrollbar Styling for Webkit */
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #000; 
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #00f3ff; 
+            border-radius: 3px;
+        }
+    </style>
+</head>
+<body class="flex justify-center bg-black p-2 sm:p-4">
+
+    <!-- Main Widget Container -->
+    <div class="cyber-card w-full max-w-lg p-4 sm:p-6 relative mb-8">
+        <div class="scanlines"></div>
+        
+        <!-- --- STATIC HEADER --- -->
+        <div class="mb-6 border-b border-cyan-900 pb-2 relative z-20 text-center">
+            <h2 class="text-xs text-cyan-700 tracking-[0.3em] mb-1">DATA_STREAM // 0xFF_FULL_ACCESS</h2>
+            <h1 class="text-3xl sm:text-4xl font-black tracking-wider text-white glitch-text uppercase">
+                PARTY_REP
+            </h1>
+        </div>
+
+        <!-- --- DYNAMIC LIST CONTAINER --- -->
+        <div id="faction-list" class="space-y-6 relative z-20">
+            <!-- Entries will be injected here by JS -->
+            <div class="text-center animate-pulse text-cyan-500 mt-8">
+                DOWNLOADING DATABASE...
+            </div>
+        </div>
+        
+        <!-- Decorative corner bits -->
+        <div class="absolute top-0 right-0 w-8 h-8 border-t-2 border-r-2 border-cyan-500 opacity-50"></div>
+        <div class="absolute bottom-0 left-0 w-8 h-8 border-b-2 border-l-2 border-pink-500 opacity-50"></div>
+    </div>
+
+    <script>
+        // --- CONFIGURATION ---
+        const SHEET_ID = '1V2KganEwaOUCPIvh8_iQTfsgf4uNXFUx_13xTtSFxxI';
+        const SHEET_GID = '0';
+        const CSV_URL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/export?format=csv&gid=${SHEET_GID}`;
+
+        // DOM Elements
+        const listContainer = document.getElementById('faction-list');
+
+        // --- FETCH DATA ---
+        async function init() {
+            try {
+                const response = await fetch(CSV_URL);
+                const text = await response.text();
+                const rows = parseCSV(text);
+
+                // Clear loading text
+                listContainer.innerHTML = '';
+
+                // Loop through rows (Skip header row 0)
+                // Rows structure: [Name, Rep, Desc]
+                for (let i = 1; i < rows.length; i++) {
+                    const rowData = rows[i];
+                    if (!rowData || rowData.length < 2) continue; // Skip empty rows
+
+                    const name = rowData[0] || "UNKNOWN";
+                    const rep = parseInt(rowData[1]) || 0;
+                    const desc = rowData[2] || "";
+
+                    createEntry(name, rep, desc, i);
+                }
+
+            } catch (err) {
+                console.error(err);
+                listContainer.innerHTML = `<div class="text-red-500 text-center">CONNECTION ERROR // RETRYING</div>`;
+            }
+        }
+
+        // --- CREATE ENTRY COMPONENT ---
+        function createEntry(name, rep, desc, index) {
+            // Container for this entry
+            const entryDiv = document.createElement('div');
+            entryDiv.className = 'w-full mb-4 border-b border-cyan-900/30 pb-4 last:border-0 last:pb-0';
+
+            // 1. Header Row (Name + Score)
+            const headerRow = document.createElement('div');
+            headerRow.className = 'flex justify-between items-end mb-1 w-full';
+
+            // Name Container (allows resizing)
+            const nameContainer = document.createElement('div');
+            nameContainer.className = 'flex-grow overflow-hidden mr-4';
+            
+            const nameEl = document.createElement('h3');
+            nameEl.className = 'text-lg font-bold text-white tracking-wide uppercase whitespace-nowrap origin-bottom-left';
+            nameEl.innerText = name;
+            
+            nameContainer.appendChild(nameEl);
+
+            // Score Display
+            const scoreEl = document.createElement('div');
+            scoreEl.className = 'text-xl font-bold flex-shrink-0 leading-none';
+            // Color logic
+            if (rep > 0) scoreEl.classList.add('text-cyan-400');
+            else if (rep < 0) scoreEl.classList.add('text-pink-500');
+            else scoreEl.classList.add('text-gray-500');
+            
+            scoreEl.innerText = (rep > 0 ? "+" : "") + rep;
+
+            headerRow.appendChild(nameContainer);
+            headerRow.appendChild(scoreEl);
+            entryDiv.appendChild(headerRow);
+
+            // 2. The Bar (Neg | Divider | Pos)
+            const barRow = document.createElement('div');
+            barRow.className = 'h-6 w-full flex items-center justify-center my-2';
+
+            // --- Negative Side ---
+            const negContainer = document.createElement('div');
+            negContainer.className = 'flex-1 flex justify-end space-x-1 space-x-reverse h-full';
+            const clampedRep = Math.max(-5, Math.min(5, rep));
+
+            // Generate 5 Negative segments (5 down to 1)
+            for (let k = 5; k >= 1; k--) {
+                const seg = document.createElement('div');
+                seg.className = 'segment flex-1'; // flex-1 to fill space evenly
+                if (clampedRep < 0 && k <= Math.abs(clampedRep)) {
+                    seg.classList.add('active-neg');
+                    seg.style.boxShadow = `0 0 ${5 + k}px var(--neon-pink)`;
+                }
+                negContainer.appendChild(seg);
+            }
+
+            // --- Center Divider ---
+            const divider = document.createElement('div');
+            divider.className = 'center-divider';
+
+            // --- Positive Side ---
+            const posContainer = document.createElement('div');
+            posContainer.className = 'flex-1 flex justify-start space-x-1 h-full';
+
+            // Generate 5 Positive segments (1 to 5)
+            for (let k = 1; k <= 5; k++) {
+                const seg = document.createElement('div');
+                seg.className = 'segment flex-1'; // flex-1 to fill space evenly
+                if (clampedRep > 0 && k <= clampedRep) {
+                    seg.classList.add('active-pos');
+                    seg.style.boxShadow = `0 0 ${5 + k}px var(--neon-cyan)`;
+                }
+                posContainer.appendChild(seg);
+            }
+
+            // Assemble Bar
+            barRow.appendChild(negContainer);
+            barRow.appendChild(divider);
+            barRow.appendChild(posContainer);
+            entryDiv.appendChild(barRow);
+
+            // 3. Description (Enlarged)
+            const descEl = document.createElement('div');
+            // Changed from text-[10px] to text-xs (approx 12px) and adjusted tracking
+            descEl.className = 'text-xs text-cyan-300 font-bold uppercase tracking-wide truncate opacity-90';
+            descEl.innerText = desc;
+            entryDiv.appendChild(descEl);
+
+            // Append to main list
+            listContainer.appendChild(entryDiv);
+
+            // Trigger resize for the name we just added
+            resizeTextToFit(nameEl);
+        }
+
+        // --- HELPERS ---
+        function parseCSV(str) {
+            const arr = [];
+            let quote = false;
+            let col, c;
+            for (let row = col = c = 0; c < str.length; c++) {
+                let cc = str[c], nc = str[c+1];
+                arr[row] = arr[row] || [];
+                arr[row][col] = arr[row][col] || '';
+                if (cc == '"' && quote && nc == '"') { arr[row][col] += cc; ++c; }
+                else if (cc == '"') { quote = !quote; }
+                else if (cc == ',' && !quote) { ++col; }
+                else if (cc == '\r' && nc == '\n' && !quote) { ++row; col = 0; ++c; }
+                else if (cc == '\n' && !quote) { ++row; col = 0; }
+                else { arr[row][col] += cc; }
+            }
+            return arr;
+        }
+
+        function resizeTextToFit(el) {
+            const maxFontSize = 1.25; // max rem size
+            let fontSize = maxFontSize; 
+            el.style.fontSize = fontSize + 'rem';
+            const parent = el.parentElement;
+            
+            // Loop down until fits
+            while (el.scrollWidth > parent.clientWidth && fontSize > 0.5) {
+                fontSize -= 0.1;
+                el.style.fontSize = fontSize + 'rem';
+            }
+        }
+
+        // Init
+        document.addEventListener('DOMContentLoaded', init);
+
+    </script>
+</body>
+</html>
