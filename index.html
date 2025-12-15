@@ -3,115 +3,293 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>RPG Campaign Tracker</title>
+    <title>Party Reputation Widget</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts: Orbitron for headers, Share Tech Mono for data -->
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Share+Tech+Mono&display=swap" rel="stylesheet">
     
-    <script src="https://ronennes.github.io/RPGUI/rpgui/rpgui.min.js"></script>
-    <link href="https://ronennes.github.io/RPGUI/rpgui/rpgui.min.css" rel="stylesheet">
-    
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.0/papaparse.min.js"></script>
-
     <style>
+        :root {
+            --neon-cyan: #00f3ff;
+            --neon-pink: #ff00ff;
+            --bg-dark: #050505;
+            --bg-panel: #0a0f14;
+        }
+
         body {
-            background-color: #222;
-            color: white;
-            padding: 20px;
-            font-family: 'Press Start 2P', cursive;
-            overflow-x: hidden; /* Prevents scrollbar issues in embed */
-        }
-        
-        .character-card {
-            margin-bottom: 25px;
-            padding: 20px !important; /* Force padding */
+            background-color: transparent;
+            font-family: 'Share Tech Mono', monospace;
+            color: var(--neon-cyan);
+            overflow: hidden;
         }
 
-        /* Customizing the Progress Bar color */
-        .rpgui-progress-fill {
-            background-color: #d32f2f !important; /* Dark Red */
-            transition: width 0.5s ease-in-out;
+        /* Cyberpunk Card Container */
+        .cyber-card {
+            background-color: var(--bg-panel);
+            border: 1px solid rgba(0, 243, 255, 0.3);
+            position: relative;
+            clip-path: polygon(
+                0 10px, 
+                10px 0, 
+                100% 0, 
+                100% calc(100% - 10px), 
+                calc(100% - 10px) 100%, 
+                0 100%
+            );
+            box-shadow: 0 0 10px rgba(0, 243, 255, 0.1);
         }
 
-        .stat-line {
-            display: flex;
-            justify-content: space-between;
-            margin-bottom: 5px;
-            font-size: 0.8em;
+        /* Scanline effect overlay */
+        .scanlines {
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: linear-gradient(
+                to bottom,
+                rgba(255,255,255,0),
+                rgba(255,255,255,0) 50%,
+                rgba(0,0,0,0.2) 50%,
+                rgba(0,0,0,0.2)
+            );
+            background-size: 100% 4px;
+            pointer-events: none;
+            z-index: 10;
+            opacity: 0.3;
+        }
+
+        /* Segmented Bar Styling */
+        .segment {
+            height: 100%;
+            transform: skewX(-20deg);
+            border: 1px solid rgba(0, 243, 255, 0.2);
+            background: rgba(0, 0, 0, 0.5);
+            transition: all 0.3s ease;
+            opacity: 0.3;
+        }
+
+        /* Active Positive Segment (Right side) */
+        .segment.active-pos {
+            background: var(--neon-cyan);
+            box-shadow: 0 0 8px var(--neon-cyan);
+            border-color: #fff;
+            opacity: 1;
+        }
+
+        /* Active Negative Segment (Left side) */
+        .segment.active-neg {
+            background: var(--neon-pink);
+            box-shadow: 0 0 10px var(--neon-pink);
+            border-color: #fff;
+            opacity: 1;
+        }
+
+        /* Center divider */
+        .center-divider {
+            width: 4px;
+            height: 120%;
+            background-color: #333;
+            margin: 0 4px;
+            transform: skewX(-20deg);
+            z-index: 30;
+        }
+
+        /* Glitch Text */
+        .glitch-text {
+            font-family: 'Orbitron', sans-serif;
+            text-shadow: 1px 0 var(--neon-pink), -1px 0 var(--neon-cyan);
+            white-space: nowrap; /* Prevent wrapping for resize logic */
         }
     </style>
 </head>
-<body>
+<body class="flex items-center justify-center min-h-screen bg-black p-4">
 
-    <div id="tracker-container" class="rpgui-content">
-        <p style="color: #aaa; text-align: center;">Loading...</p>
+    <!-- Widget Container -->
+    <div class="cyber-card w-full max-w-md p-6 relative">
+        <div class="scanlines"></div>
+        
+        <!-- Header -->
+        <div class="flex justify-between items-end mb-2 border-b border-cyan-900 pb-2 relative z-20">
+            <div class="flex-grow overflow-hidden mr-4">
+                <h2 class="text-xs text-cyan-700 tracking-widest mb-1">DATA_STREAM // <span id="data-id">LOADING...</span></h2>
+                <!-- Faction Name Container: Added overflow-hidden and w-full to force constraint -->
+                <div class="h-8 flex items-end w-full overflow-hidden">
+                    <h1 class="text-2xl font-bold tracking-wider text-white glitch-text uppercase" id="faction-name">
+                        CONNECTING...
+                    </h1>
+                </div>
+            </div>
+            <div class="text-right flex-shrink-0">
+                <div class="text-xs text-pink-500 font-bold tracking-widest uppercase">PARTY_REP</div>
+                <div class="text-3xl font-bold" id="numeric-display">--</div>
+            </div>
+        </div>
+
+        <!-- The Split Bar (-5 to +5) -->
+        <div class="h-8 w-full flex items-center justify-center my-4 px-1 relative z-20 overflow-hidden">
+            
+            <!-- Negative Side (Right aligned inside left box to grow from center) -->
+            <div class="flex-1 flex justify-end space-x-1 space-x-reverse h-full" id="bar-neg-container">
+                <!-- Injected via JS -->
+            </div>
+
+            <!-- Center Marker -->
+            <div class="center-divider"></div>
+
+            <!-- Positive Side (Left aligned inside right box to grow from center) -->
+            <div class="flex-1 flex justify-start space-x-1 h-full" id="bar-pos-container">
+                <!-- Injected via JS -->
+            </div>
+
+        </div>
+
+        <!-- Footer / Description -->
+        <div class="flex justify-between items-center mt-2 text-xs relative z-20 min-h-[1.5em]">
+            <div class="text-cyan-300 font-bold uppercase tracking-wide w-full truncate" id="desc-text">
+                ESTABLISHING LINK...
+            </div>
+        </div>
+        
+        <!-- Decorative corner bits -->
+        <div class="absolute top-0 right-0 w-8 h-8 border-t-2 border-r-2 border-cyan-500 opacity-50"></div>
+        <div class="absolute bottom-0 left-0 w-8 h-8 border-b-2 border-l-2 border-pink-500 opacity-50"></div>
     </div>
 
     <script>
         // --- CONFIGURATION ---
-        // 1. File > Share > Publish to web > CSV
-        // 2. Paste the link inside the quotes below:
-        const sheetURL = "YOUR_GOOGLE_SHEET_CSV_LINK_HERE";
+        const SHEET_ID = '1V2KganEwaOUCPIvh8_iQTfsgf4uNXFUx_13xTtSFxxI';
+        const SHEET_GID = '0';
+        const CSV_URL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/export?format=csv&gid=${SHEET_GID}`;
 
-        function init() {
-            Papa.parse(sheetURL, {
-                download: true,
-                header: true, 
-                skipEmptyLines: true,
-                complete: function(results) {
-                    renderCards(results.data);
-                },
-                error: function(err) {
-                    document.getElementById('tracker-container').innerHTML = '<p style="color:red">Error loading data</p>';
-                    console.error(err);
+        // Get Row from URL (default to 4 as requested, usually row 4 is index 3)
+        const urlParams = new URLSearchParams(window.location.search);
+        // Note: Arrays are 0-indexed, but Sheets are 1-indexed. 
+        const TARGET_ROW_INDEX = (parseInt(urlParams.get('row')) || 4) - 1; 
+
+        // DOM Elements
+        const elFactionName = document.getElementById('faction-name');
+        const elNumeric = document.getElementById('numeric-display');
+        const elDesc = document.getElementById('desc-text');
+        const elDataId = document.getElementById('data-id');
+        const elBarPos = document.getElementById('bar-pos-container');
+        const elBarNeg = document.getElementById('bar-neg-container');
+
+        // --- FETCH DATA ---
+        async function init() {
+            try {
+                const response = await fetch(CSV_URL);
+                const text = await response.text();
+                const rows = parseCSV(text);
+
+                if (rows.length > TARGET_ROW_INDEX) {
+                    const rowData = rows[TARGET_ROW_INDEX];
+                    // Expecting: [Name, RepValue, Description]
+                    const name = rowData[0] || "UNKNOWN";
+                    const rep = parseInt(rowData[1]) || 0;
+                    const desc = rowData[2] || "NO DATA";
+
+                    updateUI(name, rep, desc);
+                } else {
+                    updateUI("ERROR", 0, "ROW NOT FOUND");
                 }
-            });
+            } catch (err) {
+                console.error(err);
+                // Fallback for preview if fetch is blocked
+                // Simulating Row 4 (generic example) for preview
+                updateUI("MAELSTROM", 2, "UNPREDICTABLE // DANGER");
+            }
         }
 
-        function renderCards(data) {
-            const container = document.getElementById('tracker-container');
-            container.innerHTML = ''; 
+        // --- UI UPDATER ---
+        function updateUI(name, rep, desc) {
+            // 1. Set Text
+            elFactionName.innerText = name;
+            elNumeric.innerText = (rep > 0 ? "+" : "") + rep; // Add + sign for positive
+            elDesc.innerText = desc;
+            
+            // Hex ID flavor text
+            elDataId.innerText = "0x" + (name.length * 123).toString(16).toUpperCase();
 
-            data.forEach(char => {
-                // Ensure the row has a Name, otherwise skip
-                if(!char.Name) return;
+            // 2. Resize Name if too long
+            resizeTextToFit(elFactionName);
 
-                // Math for HP Bar
-                // Ensure your Sheet has columns named exactly: HP and MaxHP
-                let current = parseInt(char.HP);
-                let max = parseInt(char.MaxHP);
-                let percent = (current / max) * 100;
-                if (percent > 100) percent = 100;
-                if (percent < 0) percent = 0;
-
-                const cardHTML = `
-                    <div class="rpgui-container framed character-card">
-                        <div class="stat-line">
-                            <span style="font-size:1.2em; font-weight:bold;">${char.Name}</span>
-                            <span>Lvl ${char.Level || '?'} ${char.Class || ''}</span>
-                        </div>
-                        
-                        <div class="rpgui-progress">
-                             <div class="rpgui-progress-track">
-                                <div class="rpgui-progress-fill" style="width: ${percent}%;"></div>
-                             </div>
-                             <div class="rpgui-progress-left-edge"></div>
-                             <div class="rpgui-progress-right-edge"></div>
-                        </div>
-                        <div style="text-align: center; font-size: 0.7em; margin-top: 5px;">
-                            ${current} / ${max} HP
-                        </div>
-                        
-                        <hr class="golden">
-                        <p style="font-size:0.8em; line-height: 1.4;">${char.Notes || ''}</p>
-                    </div>
-                `;
-                
-                container.innerHTML += cardHTML;
-            });
+            // 3. Render Bar
+            renderBiDirectionalBar(rep);
         }
 
-        // Load immediately
-        init();
-        // Refresh every 10 seconds
-        setInterval(init, 10000);
+        // --- BAR RENDERER (-5 to +5) ---
+        function renderBiDirectionalBar(rep) {
+            elBarPos.innerHTML = '';
+            elBarNeg.innerHTML = '';
+
+            const MAX_SCORE = 5;
+            const clampedRep = Math.max(-5, Math.min(5, rep));
+
+            // Create 5 segments for NEGATIVE side (Right to Left visually)
+            // Visual Order (using justify-end): [5] [4] [3] [2] [1] | Center
+            // 1 is closest to center (representing -1)
+            
+            // Negative Loop: 5 down to 1
+            for (let i = 5; i >= 1; i--) {
+                const seg = document.createElement('div');
+                seg.className = 'segment w-full';
+                if (clampedRep < 0 && i <= Math.abs(clampedRep)) {
+                    seg.classList.add('active-neg');
+                    seg.style.boxShadow = `0 0 ${10 + i*2}px var(--neon-pink)`; // Increasing glow
+                }
+                elBarNeg.appendChild(seg);
+            }
+
+            // Positive Loop: 1 up to 5
+            for (let i = 1; i <= 5; i++) {
+                const seg = document.createElement('div');
+                seg.className = 'segment w-full';
+                if (clampedRep > 0 && i <= clampedRep) {
+                    seg.classList.add('active-pos');
+                    seg.style.boxShadow = `0 0 ${10 + i*2}px var(--neon-cyan)`;
+                }
+                elBarPos.appendChild(seg);
+            }
+        }
+
+        // --- HELPERS ---
+        
+        // Simple CSV parser
+        function parseCSV(str) {
+            const arr = [];
+            let quote = false;
+            let col, c;
+
+            for (let row = col = c = 0; c < str.length; c++) {
+                let cc = str[c], nc = str[c+1];
+                arr[row] = arr[row] || [];
+                arr[row][col] = arr[row][col] || '';
+
+                if (cc == '"' && quote && nc == '"') { arr[row][col] += cc; ++c; }
+                else if (cc == '"') { quote = !quote; }
+                else if (cc == ',' && !quote) { ++col; }
+                else if (cc == '\r' && nc == '\n' && !quote) { ++row; col = 0; ++c; }
+                else if (cc == '\n' && !quote) { ++row; col = 0; }
+                else { arr[row][col] += cc; }
+            }
+            return arr;
+        }
+
+        // Text Resizer
+        function resizeTextToFit(el) {
+            let fontSize = 1.5; // Start at 1.5rem
+            el.style.fontSize = fontSize + 'rem';
+            const parent = el.parentElement;
+            
+            // Reduce until it fits or gets too small
+            // We check scrollWidth (content) vs clientWidth (visible box)
+            while (el.scrollWidth > parent.clientWidth && fontSize > 0.5) {
+                fontSize -= 0.1;
+                el.style.fontSize = fontSize + 'rem';
+            }
+        }
+
+        // Init
+        document.addEventListener('DOMContentLoaded', init);
 
     </script>
 </body>
