@@ -17,11 +17,17 @@
             --bg-panel: #0a0f14;
         }
 
+        html, body {
+            height: 100%; /* Ensure full height is available */
+        }
+
         body {
             background-color: transparent;
             font-family: 'Share Tech Mono', monospace;
             color: var(--neon-cyan);
-            overflow: hidden;
+            /* Removed overflow:hidden to allow scrolling if embed is too small */
+            overflow-y: auto; 
+            overflow-x: hidden;
         }
 
         /* Cyberpunk Card Container */
@@ -101,11 +107,12 @@
         }
     </style>
 </head>
-<body class="flex items-center justify-center min-h-screen bg-black p-2 sm:p-4">
+<!-- Removed min-h-screen and items-center to prevent vertical centering clipping issues -->
+<body class="flex justify-center bg-black p-2 sm:p-4">
 
     <!-- Widget Container -->
     <!-- Added responsive padding (p-3 on mobile, p-6 on desktop) -->
-    <div class="cyber-card w-full max-w-md p-3 sm:p-6 relative">
+    <div class="cyber-card w-full max-w-md p-3 sm:p-6 relative my-auto">
         <div class="scanlines"></div>
         
         <!-- Header -->
