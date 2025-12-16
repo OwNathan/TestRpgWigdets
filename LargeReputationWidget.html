@@ -152,15 +152,18 @@
         // 1. Check URL parameters
         const urlParams = new URLSearchParams(window.location.search);
         
-        // 2. Define Default ID (Your original sheet)
+        // 2. Define Defaults
         const DEFAULT_SHEET_ID = '1qmfeFxPeAmccrxF7qggzWwpNchkpsw6wsTco-2cvRXw';
         
-        // 3. Determine which ID to use
-        // If ?sheetId=XYZ is in URL, use XYZ. Otherwise, use DEFAULT.
+        // 3. Determine which ID and Sheet Name to use
+        // Sheet Name is now HARDCODED to 'Reputation' to ensure this specific widget 
+        // always looks for the Reputation tab, regardless of URL params.
         const SHEET_ID = urlParams.get('sheetId') || DEFAULT_SHEET_ID;
-        const SHEET_GID = '0'; // We keep GID constant for now
+        const SHEET_NAME = 'Reputation'; 
         
-        const CSV_URL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/export?format=csv&gid=${SHEET_GID}`;
+        // Use Google Visualization API endpoint to allow fetching by Sheet Name
+        // tqx=out:csv tells it to return CSV format
+        const CSV_URL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(SHEET_NAME)}`;
 
         // DOM Elements
         const listContainer = document.getElementById('faction-list');
@@ -191,7 +194,8 @@
             } catch (err) {
                 console.error(err);
                 listContainer.innerHTML = `<div class="text-red-500 text-center">CONNECTION ERROR // RETRYING</div>
-                <div class="text-xs text-center text-gray-500 mt-2">ID: ${SHEET_ID.substring(0,6)}...</div>`;
+                <div class="text-xs text-center text-gray-500 mt-2">ID: ${SHEET_ID.substring(0,6)}...</div>
+                <div class="text-xs text-center text-gray-500">Sheet: ${SHEET_NAME}</div>`;
             }
         }
 
