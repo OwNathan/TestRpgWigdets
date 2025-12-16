@@ -1,0 +1,382 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Noir Investigation Log</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts: Special Elite (Typewriter), Old Standard TT (Newspaper/Report), Permanent Marker (Stamps), Patrick Hand (Handwriting) -->
+    <link href="https://fonts.googleapis.com/css2?family=Special+Elite&family=Old+Standard+TT:ital,wght@0,400;0,700;1,400&family=Permanent+Marker&family=Patrick+Hand&display=swap" rel="stylesheet">
+    
+    <style>
+        :root {
+            --paper-bg: #f4f1ea;
+            --paper-shadow: #d1cdc5;
+            --ink-black: #1a1a1a;
+            --ink-faded: #4a4a4a;
+            --stamp-red: #c92a2a;
+            --highlight-yellow: rgba(255, 248, 150, 0.4);
+            --folder-bg: #e6dcc3;
+        }
+
+        html, body {
+            min-height: 100%;
+            height: auto;
+        }
+
+        body {
+            background-color: transparent;
+            font-family: 'Special Elite', monospace;
+            color: var(--ink-black);
+            overflow-y: visible;
+            overflow-x: hidden;
+        }
+
+        /* --- Main Container (The "Case File") --- */
+        .case-file {
+            background-color: var(--folder-bg); /* Manila folder color */
+            border: 1px solid #d4c5a3;
+            position: relative;
+            box-shadow: 2px 4px 15px rgba(0, 0, 0, 0.3);
+            /* Rounded tabs effect via subtle border radius */
+            border-radius: 2px;
+            /* Paper texture grain (simulated with noise) */
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.05'/%3E%3C/svg%3E");
+        }
+
+        /* Paper texture for inner cards */
+        .paper-texture {
+            background-color: var(--paper-bg);
+            background-image: linear-gradient(rgba(255,255,255,0.5) 1px, transparent 1px);
+            background-size: 100% 24px; /* Lined paper effect */
+        }
+
+        /* --- Individual Evidence Card Styling --- */
+        .evidence-card {
+            background-color: var(--paper-bg);
+            border: 1px solid #c7c4bc;
+            position: relative;
+            box-shadow: 1px 2px 6px rgba(0,0,0,0.15);
+            transition: all 0.3s ease;
+            display: flex;
+            flex-direction: column;
+            transform: rotate(-0.5deg); /* Slight organic tilt */
+        }
+        
+        .evidence-card:nth-child(even) {
+            transform: rotate(0.5deg);
+        }
+
+        .evidence-card:hover {
+            transform: scale(1.01) rotate(0deg);
+            box-shadow: 3px 6px 12px rgba(0,0,0,0.2);
+            z-index: 10;
+        }
+
+        /* Paper Clip Graphic (CSS) */
+        .paper-clip {
+            position: absolute;
+            top: -10px;
+            right: 20px;
+            width: 12px;
+            height: 35px;
+            border-radius: 10px;
+            border: 2px solid #888;
+            border-bottom: none;
+            z-index: 20;
+            background: transparent;
+            box-shadow: 1px 1px 2px rgba(0,0,0,0.3);
+        }
+        .paper-clip::before {
+            content: '';
+            position: absolute;
+            top: 8px; left: -2px;
+            width: 12px; height: 20px;
+            border-radius: 10px;
+            border: 2px solid #888;
+            border-top: none;
+            z-index: -1;
+        }
+
+        /* Typography Styles */
+        .font-typewriter {
+            font-family: 'Special Elite', monospace;
+        }
+        
+        .font-report {
+            font-family: 'Old Standard TT', serif;
+        }
+
+        .font-stamp {
+            font-family: 'Permanent Marker', cursive;
+        }
+
+        /* NEW: Handwritten Ink Style */
+        .ink-text {
+            font-family: 'Patrick Hand', cursive;
+            color: #003366; /* Midnight Blue Ink */
+            font-size: 1.25em; /* Slightly larger for readability */
+            line-height: 0.9;
+            /* Subtle shadow to simulate ink bleed/pressure */
+            text-shadow: 0.5px 0.5px 0px rgba(0, 51, 102, 0.15);
+            vertical-align: -1px;
+        }
+
+        /* Stamp Effect */
+        .stamp-box {
+            border: 2px solid var(--stamp-red);
+            color: var(--stamp-red);
+            padding: 4px 8px;
+            font-family: 'Permanent Marker', cursive;
+            opacity: 0.8;
+            transform: rotate(-5deg);
+            display: inline-block;
+            font-size: 0.7rem;
+            letter-spacing: 1px;
+            mix-blend-mode: multiply;
+        }
+
+        /* Scrollbar Styling - simpler */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #e0ddd5; 
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #999; 
+            border: 1px solid #e0ddd5;
+        }
+    </style>
+</head>
+<body class="flex justify-center bg-transparent p-2 sm:p-4">
+
+    <!-- Main Widget Container -->
+    <div class="case-file w-full p-6 sm:p-8 relative mb-8 min-h-[400px]">
+        
+        <!-- --- HEADER SECTION --- -->
+        <div class="border-b-2 border-black border-double pb-4 mb-8 flex flex-col sm:flex-row justify-between items-end">
+            <div>
+                <h2 id="header-bureau" class="font-typewriter text-xs text-gray-600 tracking-widest mb-1 uppercase">Detective Bureau // Archive Div.</h2>
+                <h1 id="header-title" class="font-report text-4xl font-bold text-black tracking-wide uppercase" style="text-shadow: 1px 1px 0px rgba(0,0,0,0.1);">
+                    Case Log: 1930
+                </h1>
+            </div>
+            
+            <!-- Status Stamp -->
+            <div class="mt-4 sm:mt-0">
+                <div class="stamp-box transform rotate-6 border-4 text-lg">
+                    CONFIDENTIAL
+                </div>
+            </div>
+        </div>
+
+        <!-- --- GRID CONTAINER --- -->
+        <div id="clue-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 relative z-20">
+            <!-- Entries injected here -->
+            <div class="col-span-full text-center mt-12">
+                <span class="font-typewriter animate-pulse text-gray-500">Retrieving files from archives...</span>
+            </div>
+        </div>
+        
+        <!-- Bottom Decoration -->
+        <div id="footer-text" class="absolute bottom-3 right-5 text-[10px] text-gray-500 font-typewriter italic">
+            Property of the Investigation Bureau. Do not remove.
+        </div>
+    </div>
+
+    <script>
+        // --- CONFIGURATION ---
+        
+        const urlParams = new URLSearchParams(window.location.search);
+        
+        // Default ID (Same as before)
+        const DEFAULT_SHEET_ID = '1qmfeFxPeAmccrxF7qggzWwpNchkpsw6wsTco-2cvRXw';
+        
+        const SHEET_ID = urlParams.get('sheetId') || DEFAULT_SHEET_ID;
+        // Using "Clues" sheet as base
+        const SHEET_NAME = 'Clues'; 
+        
+        const CSV_URL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(SHEET_NAME)}`;
+
+        const gridContainer = document.getElementById('clue-grid');
+
+        // --- FETCH & INIT ---
+        async function init() {
+            try {
+                const response = await fetch(CSV_URL);
+                if (!response.ok) throw new Error("Network response was not ok");
+                
+                const text = await response.text();
+                const rows = parseCSV(text);
+
+                // --- DYNAMIC HEADER/FOOTER LOGIC ---
+                // We expect F2 and G2 to be in the first data row (index 1)
+                // Columns: A=0, B=1, C=2, D=3, E=4, F=5, G=6
+                
+                const firstDataRow = rows[1]; 
+                let caseYear = "1930"; // Default
+                let bureauName = "Detective Bureau"; // Default
+
+                if (firstDataRow) {
+                    // Check Column F (Index 5) for Year
+                    if (firstDataRow[5] && firstDataRow[5].trim() !== "") {
+                        caseYear = firstDataRow[5];
+                    }
+                    // Check Column G (Index 6) for Bureau Name
+                    if (firstDataRow[6] && firstDataRow[6].trim() !== "") {
+                        bureauName = firstDataRow[6];
+                    }
+                }
+
+                // Update DOM
+                const headerBureauEl = document.getElementById('header-bureau');
+                const headerTitleEl = document.getElementById('header-title');
+                const footerTextEl = document.getElementById('footer-text');
+
+                if (headerBureauEl) headerBureauEl.innerText = `${bureauName} // ARCHIVE DIV.`.toUpperCase();
+                if (headerTitleEl) headerTitleEl.innerText = `CASE LOG: ${caseYear}`;
+                if (footerTextEl) footerTextEl.innerText = `Property of the ${bureauName}. Do not remove.`;
+
+
+                // --- GRID GENERATION ---
+                gridContainer.innerHTML = '';
+
+                // Loop through rows (Skip header row 0)
+                for (let i = 1; i < rows.length; i++) {
+                    const rowData = rows[i];
+                    if (!rowData || rowData.length < 1 || !rowData[0]) continue;
+
+                    const data = {
+                        name: rowData[0] || "UNKNOWN SUSPECT/ITEM",
+                        date: rowData[1] || "Date Unknown",
+                        place: rowData[2] || "Loc. Unknown",
+                        desc: rowData[3] || "No description provided."
+                    };
+
+                    createCard(data, i);
+                }
+
+            } catch (err) {
+                console.error(err);
+                gridContainer.innerHTML = `
+                    <div class="col-span-full border-2 border-red-800 bg-[#f8d7da] p-6 text-center shadow-inner">
+                        <h3 class="font-stamp text-red-900 text-xl mb-2">TELEGRAM FAILED</h3>
+                        <p class="font-typewriter text-sm text-black">Stop. Could not retrieve intel. Stop.</p>
+                        <p class="text-xs text-gray-600 mt-2 font-mono">${err.message}</p>
+                    </div>
+                `;
+            }
+        }
+
+        // --- RENDER COMPONENT (NOIR STYLE) ---
+        function createCard(data, index) {
+            // Card Wrapper
+            const card = document.createElement('div');
+            card.className = 'evidence-card p-4 h-full';
+
+            // Paper clip decoration
+            const clip = document.createElement('div');
+            clip.className = 'paper-clip';
+            card.appendChild(clip);
+
+            // 1. Header (Date Stamp & Title)
+            const headerDiv = document.createElement('div');
+            headerDiv.className = 'border-b border-gray-400 pb-2 mb-3';
+            
+            // Date / ID Row
+            const metaRow = document.createElement('div');
+            metaRow.className = 'flex justify-between items-center mb-1 text-xs text-gray-500 font-bold';
+            
+            // Using a "File No." aesthetic for ID
+            const idSpan = document.createElement('span');
+            idSpan.innerText = `FILE NO. ${String(index).padStart(4, '0')}`;
+            
+            const dateSpan = document.createElement('span');
+            dateSpan.className = 'font-typewriter text-black';
+            dateSpan.innerText = data.date.toUpperCase();
+
+            metaRow.appendChild(idSpan);
+            metaRow.appendChild(dateSpan);
+            headerDiv.appendChild(metaRow);
+
+            // Title
+            const title = document.createElement('h3');
+            title.className = 'font-report font-bold text-xl text-black leading-tight mt-2';
+            title.innerText = data.name;
+            headerDiv.appendChild(title);
+
+            card.appendChild(headerDiv);
+
+            // 2. Body Text (Typewriter style)
+            const contentDiv = document.createElement('div');
+            contentDiv.className = 'flex-grow mb-4';
+
+            const desc = document.createElement('div');
+            desc.className = 'font-typewriter text-sm text-gray-800 leading-relaxed whitespace-pre-wrap';
+            // Use formatter for bold/italics
+            desc.innerHTML = formatText(data.desc);
+            contentDiv.appendChild(desc);
+
+            card.appendChild(contentDiv);
+
+            // 3. Footer (Location Stamp)
+            const footer = document.createElement('div');
+            footer.className = 'mt-auto pt-2 border-t border-gray-300 border-dashed flex justify-end';
+            
+            const locStamp = document.createElement('div');
+            locStamp.className = 'text-xs uppercase text-gray-500 font-bold tracking-wider';
+            locStamp.innerHTML = `LOC: <span class="text-black underline decoration-gray-400 underline-offset-2">${data.place}</span>`;
+            
+            footer.appendChild(locStamp);
+            card.appendChild(footer);
+
+            gridContainer.appendChild(card);
+        }
+
+        // --- HELPERS (Same logic, different naming context internally if needed) ---
+        
+        function parseCSV(str) {
+            const arr = [];
+            let quote = false;
+            let col, c;
+            for (let row = col = c = 0; c < str.length; c++) {
+                let cc = str[c], nc = str[c+1];
+                arr[row] = arr[row] || [];
+                arr[row][col] = arr[row][col] || '';
+                if (cc == '"' && quote && nc == '"') { arr[row][col] += cc; ++c; }
+                else if (cc == '"') { quote = !quote; }
+                else if (cc == ',' && !quote) { ++col; }
+                else if (cc == '\r' && nc == '\n' && !quote) { ++row; col = 0; ++c; }
+                else if (cc == '\n' && !quote) { ++row; col = 0; }
+                else { arr[row][col] += cc; }
+            }
+            return arr;
+        }
+
+        function formatText(text) {
+            if (!text) return "";
+            
+            let formatted = text.replace(/&/g, "&amp;")
+                                .replace(/</g, "&lt;")
+                                .replace(/>/g, "&gt;");
+
+            // Noir Styling for bold/italics
+            // Bold = Heavy typewriter strike (simulated color darkening)
+            formatted = formatted.replace(/\*\*(.*?)\*\*/g, '<strong class="text-black font-extrabold bg-yellow-100/50 px-1">$1</strong>');
+            formatted = formatted.replace(/__(.*?)__/g, '<strong class="text-black font-extrabold bg-yellow-100/50 px-1">$1</strong>');
+            
+            // Italic = Handwritten INK note style
+            // CHANGED: Use ink-text class for italics
+            formatted = formatted.replace(/\*(.*?)\*/g, '<span class="ink-text">$1</span>');
+            formatted = formatted.replace(/_(.*?)_/g, '<span class="ink-text">$1</span>');
+
+            return formatted;
+        }
+
+        document.addEventListener('DOMContentLoaded', init);
+
+    </script>
+</body>
+</html>
