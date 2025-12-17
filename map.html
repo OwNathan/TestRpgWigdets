@@ -8,6 +8,9 @@
   
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
   <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
+
+  <link rel="stylesheet" href="https://unpkg.com/leaflet.fullscreen/dist/Control.FullScreen.css" />
+  <script src="https://unpkg.com/leaflet.fullscreen/dist/Control.FullScreen.umd.js"></script>
   
   <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.0/papaparse.min.js"></script>
 </head>
@@ -28,14 +31,15 @@
     // --- SETUP MAP ---
     var map = L.map('map', {
       crs: L.CRS.Simple,
-      minZoom: -1,
+      minZoom: -0.8,
       maxZoom: 2,
-      fullscreenControl: true,
     });
+
 
     var bounds = [[0, 0], [mapHeight, mapWidth]];
     var image = L.imageOverlay(mapImageUrl, bounds).addTo(map);
     map.fitBounds(bounds);
+    map.addControl(new L.Control.FullScreen());
 
     // --- FEATURE 1: RIGHT CLICK TO GET COORDINATES ---
     map.on('contextmenu', function(e) {
