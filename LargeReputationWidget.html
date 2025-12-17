@@ -191,6 +191,8 @@
                     createEntry(name, rep, desc, i);
                 }
 
+            setTimeout(sendHeight, 100); // Small delay to ensure rendering is done
+
             } catch (err) {
                 console.error(err);
                 listContainer.innerHTML = `<div class="text-red-500 text-center">CONNECTION ERROR // RETRYING</div>
@@ -322,6 +324,17 @@
                 fontSize -= 0.1;
                 el.style.fontSize = fontSize + 'rem';
             }
+        }
+        
+
+        // --- HEIGHT REPORTING FUNCTION ---
+        function sendHeight() {
+            // 1. Get the total height of the widget content
+            const height = document.body.scrollHeight;
+
+            // 2. Send this height to the parent window (your website)
+             // '*' allows it to talk to any domain (safe for this specific use case)
+            window.parent.postMessage({ type: 'ttrpg-widget-resize', height: height }, '*');
         }
 
         // Init
