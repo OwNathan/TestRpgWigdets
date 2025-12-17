@@ -11,7 +11,7 @@ Made to track reputation going from -5 to 5. Linked to a Google Sheet data and a
 - Make a copy aon your Google Drive.
 - Use the following code to embed it on a Google Site, Digital Garden, any other thing that supports embedded content. Replace the `YOUR_SHEET_ID_HERE` with the unique bit of your Sheet URL. Using the sample Sheet, it would be: `1qmfeFxPeAmccrxF7qggzWwpNchkpsw6wsTco-2cvRXw`
 
-``` html
-<iframe src="https://OwNathan.github.io/TestRpgWigdets/LargeReputationWidget.html?sheetId=YOUR_SHEET_ID_HERE" style="width:100%; height:100%; border:none;"></iframe>
-```
+
+`<iframe src="https://OwNathan.github.io/TestRpgWigdets/LargeReputationWidget.html?sheetId=YOUR_SHEET_ID_HERE" style="width:100%; height:100%; border:none;"></iframe>`
+
 
