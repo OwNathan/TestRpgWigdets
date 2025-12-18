@@ -117,6 +117,14 @@
         <div class="absolute bottom-0 left-0 w-8 h-8 border-b-2 border-l-2 border-pink-500 opacity-50"></div>
     </div>
 
+    <!-- Image Modal -->
+    <div id="image-modal" class="fixed inset-0 z-[100] flex items-center justify-center bg-black/90 hidden opacity-0 transition-opacity duration-300 backdrop-blur-sm" onclick="closeModal()">
+        <div class="relative max-w-[95vw] max-h-[95vh]">
+            <img id="modal-img" src="" alt="Full View" class="max-w-full max-h-[90vh] border-2 border-cyan-500 shadow-[0_0_30px_rgba(0,243,255,0.2)] object-contain" onclick="event.stopPropagation()">
+            <button class="absolute -top-10 right-0 text-cyan-500 hover:text-white text-2xl font-orbitron tracking-widest uppercase" onclick="closeModal()">Close [X]</button>
+        </div>
+    </div>
+
     <script>
         // --- CONFIGURATION ---
         
@@ -194,7 +202,14 @@
                 const imageEl = document.createElement('img');
                 imageEl.src = img;
                 imageEl.alt = name;
-                imageEl.className = 'w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity duration-300';
+                // Added cursor-pointer
+                imageEl.className = 'w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity duration-300 cursor-pointer';
+                
+                // Click to open modal
+                imageEl.onclick = function() {
+                    openModal(img);
+                };
+
                 imageEl.onerror = function() {
                     // Fallback if image load fails
                     this.style.display = 'none';
@@ -297,6 +312,27 @@
         function sendHeight() {
             const height = document.body.scrollHeight;
             window.parent.postMessage({ type: 'ttrpg-widget-resize', height: height }, '*');
+        }
+
+        // --- MODAL FUNCTIONS ---
+        const modal = document.getElementById('image-modal');
+        const modalImg = document.getElementById('modal-img');
+
+        function openModal(src) {
+            modalImg.src = src;
+            modal.classList.remove('hidden');
+            // Small timeout to allow display:block to apply before opacity transition
+            setTimeout(() => {
+                modal.classList.remove('opacity-0');
+            }, 10);
+        }
+
+        function closeModal() {
+            modal.classList.add('opacity-0');
+            setTimeout(() => {
+                modal.classList.add('hidden');
+                modalImg.src = '';
+            }, 300); // Match duration-300
         }
 
         // Init
