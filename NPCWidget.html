@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NPC Database</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts: Orbitron for headers, Share Tech Mono for data -->
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+    
+    <style>
+        :root {
+            --neon-cyan: #00f3ff;
+            --neon-pink: #ff00ff;
+            --bg-dark: #050505;
+            --bg-panel: #0a0f14;
+        }
+
+        html, body {
+            min-height: 100%;
+            height: auto; /* Ensure height can grow */
+        }
+
+        body {
+            background-color: transparent;
+            font-family: 'Share Tech Mono', monospace;
+            color: var(--neon-cyan);
+            overflow-y: visible; /* Remove internal scrollbar, allow full height */
+            overflow-x: hidden;
+        }
+
+        /* Cyberpunk Card Container */
+        .cyber-card {
+            background-color: var(--bg-panel);
+            border: 1px solid rgba(0, 243, 255, 0.3);
+            position: relative;
+            /* Angled corners using clip-path */
+            clip-path: polygon(
+                0 10px, 
+                10px 0, 
+                100% 0, 
+                100% calc(100% - 10px), 
+                calc(100% - 10px) 100%, 
+                0 100%
+            );
+            box-shadow: 0 0 10px rgba(0, 243, 255, 0.1);
+        }
+
+        /* Scanline effect overlay */
+        .scanlines {
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: linear-gradient(
+                to bottom,
+                rgba(255,255,255,0),
+                rgba(255,255,255,0) 50%,
+                rgba(0,0,0,0.2) 50%,
+                rgba(0,0,0,0.2)
+            );
+            background-size: 100% 4px;
+            pointer-events: none;
+            z-index: 50; /* Above content but below interactions if any */
+            opacity: 0.15;
+        }
+
+        /* Glitch Text */
+        .glitch-text {
+            font-family: 'Orbitron', sans-serif;
+            text-shadow: 1px 0 var(--neon-pink), -1px 0 var(--neon-cyan);
+            white-space: nowrap; 
+        }
+
+        /* Scrollbar Styling for Webkit */
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #000; 
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #00f3ff; 
+            border-radius: 3px;
+        }
+        
+        /* Image styling */
+        .npc-image-container {
+            clip-path: polygon(0 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%);
+            overflow: hidden;
+        }
+    </style>
+</head>
+<body class="flex justify-center transparent p-2 sm:p-4">
+
+    <!-- Main Widget Container -->
+    <div class="cyber-card w-full max-w-7xl p-4 sm:p-6 relative mb-8">
+        <div class="scanlines"></div>
+        
+        <!-- --- STATIC HEADER --- -->
+        <div class="mb-6 border-b border-cyan-900 pb-2 relative z-20 text-center">
+            <h2 class="text-xs text-cyan-700 tracking-[0.3em] mb-1">DATABASE_ACCESS // 0xFF_PERSONNEL</h2>
+            <h1 class="text-3xl sm:text-4xl font-black tracking-wider text-white glitch-text uppercase">
+                CHARACTERS
+            </h1>
+        </div>
+
+        <!-- --- DYNAMIC LIST CONTAINER --- -->
+        <div id="npc-list" class="grid grid-cols-1 lg:grid-cols-2 gap-6 relative z-20">
+            <!-- Entries will be injected here by JS -->
+            <div class="text-center animate-pulse text-cyan-500 mt-8">
+                DOWNLOADING RECORDS...
+            </div>
+        </div>
+        
+        <!-- Decorative corner bits -->
+        <div class="absolute top-0 right-0 w-8 h-8 border-t-2 border-r-2 border-cyan-500 opacity-50"></div>
+        <div class="absolute bottom-0 left-0 w-8 h-8 border-b-2 border-l-2 border-pink-500 opacity-50"></div>
+    </div>
+
+    <script>
+        // --- CONFIGURATION ---
+        
+        // 1. Check URL parameters
+        const urlParams = new URLSearchParams(window.location.search);
+        
+        // 2. Define Defaults
+        const DEFAULT_SHEET_ID = '1qmfeFxPeAmccrxF7qggzWwpNchkpsw6wsTco-2cvRXw';
+        
+        // 3. Determine which ID and Sheet Name to use
+        const SHEET_ID = urlParams.get('sheetId') || DEFAULT_SHEET_ID;
+        const SHEET_NAME = 'Characters'; 
+        
+        // Use Google Visualization API endpoint to allow fetching by Sheet Name
+        // tqx=out:csv tells it to return CSV format
+        const CSV_URL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(SHEET_NAME)}`;
+
+        // DOM Elements
+        const listContainer = document.getElementById('npc-list');
+
+        // --- FETCH DATA ---
+        async function init() {
+            try {
+                const response = await fetch(CSV_URL);
+                const text = await response.text();
+                const rows = parseCSV(text);
+
+                // Clear loading text
+                listContainer.innerHTML = '';
+
+                // Loop through rows (Skip header row 0)
+                // Expected Columns: Name, Image, Title, Description, Affiliation, Status
+                for (let i = 1; i < rows.length; i++) {
+                    const rowData = rows[i];
+                    if (!rowData || rowData.length < 1) continue; // Skip empty rows
+
+                    const name = rowData[0] || "";
+                    if (!name) continue; // Mandatory
+
+                    const img = rowData[1] || "";
+                    const title = rowData[2] || "";
+                    const desc = rowData[3] || ""; // Mandatory by spec, but we render empty if missing
+                    const aff = rowData[4] || "";
+                    const stat = rowData[5] || "";
+
+                    createEntry(name, img, title, desc, aff, stat, i);
+                }
+
+            setTimeout(sendHeight, 100); // Small delay to ensure rendering is done
+
+            } catch (err) {
+                console.error(err);
+                listContainer.innerHTML = `<div class="text-red-500 text-center">CONNECTION ERROR // RETRYING</div>
+                <div class="text-xs text-center text-gray-500 mt-2">ID: ${SHEET_ID.substring(0,6)}...</div>
+                <div class="text-xs text-center text-gray-500">Sheet: ${SHEET_NAME}</div>`;
+            }
+        }
+
+        // --- CREATE ENTRY COMPONENT ---
+        function createEntry(name, img, title, desc, aff, stat, index) {
+            // Container for this entry - Card Style
+            const entryDiv = document.createElement('div');
+            entryDiv.className = 'w-full h-full bg-black/20 border border-cyan-900/30 p-4 flex flex-col sm:flex-row gap-4 hover:border-cyan-500/30 transition-colors relative';
+
+            // 1. Image Section (Left)
+            const imgContainer = document.createElement('div');
+            imgContainer.className = 'flex-shrink-0';
+            
+            // Fixed size container for image
+            const imgFrame = document.createElement('div');
+            imgFrame.className = 'w-full sm:w-28 h-48 sm:h-28 bg-black/40 border border-cyan-900/50 relative npc-image-container group';
+            
+            if (img && img.trim() !== '') {
+                // Image exists
+                const imageEl = document.createElement('img');
+                imageEl.src = img;
+                imageEl.alt = name;
+                imageEl.className = 'w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity duration-300';
+                imageEl.onerror = function() {
+                    // Fallback if image load fails
+                    this.style.display = 'none';
+                    imgFrame.innerHTML = '<div class="w-full h-full flex items-center justify-center text-cyan-900 text-4xl font-bold select-none">?</div>';
+                };
+                imgFrame.appendChild(imageEl);
+            } else {
+                // No Image -> Question Mark
+                const placeholder = document.createElement('div');
+                placeholder.className = 'w-full h-full flex items-center justify-center text-cyan-900 text-4xl font-bold select-none';
+                placeholder.innerText = '?';
+                imgFrame.appendChild(placeholder);
+            }
+            
+            imgContainer.appendChild(imgFrame);
+            entryDiv.appendChild(imgContainer);
+
+            // 2. Details Section (Right)
+            const contentDiv = document.createElement('div');
+            contentDiv.className = 'flex-grow flex flex-col justify-start min-w-0'; // min-w-0 fixes flex child truncation
+
+            // --- HEADER: Name (Left) + Status (Right) ---
+            const headerRow = document.createElement('div');
+            headerRow.className = 'flex justify-between items-start mb-2 border-b border-cyan-900/30 pb-2';
+            
+            // Name Column
+            const nameCol = document.createElement('div');
+            nameCol.className = 'mr-2';
+            
+            const nameEl = document.createElement('h3');
+            nameEl.className = 'text-xl font-bold text-white tracking-wide uppercase leading-none';
+            nameEl.innerText = name;
+            nameCol.appendChild(nameEl);
+
+            if (title && title.trim() !== '') {
+                const titleEl = document.createElement('div');
+                titleEl.className = 'text-xs text-pink-500 font-bold tracking-[0.15em] uppercase mt-1';
+                titleEl.innerText = title;
+                nameCol.appendChild(titleEl);
+            }
+            headerRow.appendChild(nameCol);
+
+            // Status Column (Upper Right)
+            if (stat && stat.trim() !== '') {
+                const statEl = document.createElement('div');
+                statEl.className = 'flex-shrink-0 text-xs font-mono text-pink-400 border border-pink-900/50 px-2 py-1 bg-pink-900/10 uppercase';
+                statEl.innerText = stat;
+                headerRow.appendChild(statEl);
+            }
+            contentDiv.appendChild(headerRow);
+
+            // Description
+            if (desc && desc.trim() !== '') {
+                const descEl = document.createElement('div');
+                descEl.className = 'text-sm text-cyan-100/80 font-mono leading-relaxed mb-3 whitespace-pre-wrap';
+                descEl.innerText = desc;
+                contentDiv.appendChild(descEl);
+            }
+
+            // Affiliation (Bottom, Larger, No Prefix)
+            if (aff && aff.trim() !== '') {
+                const affDiv = document.createElement('div');
+                affDiv.className = 'mt-auto pt-1';
+                
+                const affEl = document.createElement('span');
+                // Increased size (text-sm/base), removed prefix
+                affEl.className = 'text-sm text-cyan-400 font-bold tracking-wider uppercase font-orbitron';
+                affEl.innerText = aff;
+                
+                affDiv.appendChild(affEl);
+                contentDiv.appendChild(affDiv);
+            }
+
+            entryDiv.appendChild(contentDiv);
+
+            // Append to main list
+            listContainer.appendChild(entryDiv);
+        }
+
+        // --- HELPERS ---
+        function parseCSV(str) {
+            const arr = [];
+            let quote = false;
+            let col, c;
+            for (let row = col = c = 0; c < str.length; c++) {
+                let cc = str[c], nc = str[c+1];
+                arr[row] = arr[row] || [];
+                arr[row][col] = arr[row][col] || '';
+                if (cc == '"' && quote && nc == '"') { arr[row][col] += cc; ++c; }
+                else if (cc == '"') { quote = !quote; }
+                else if (cc == ',' && !quote) { ++col; }
+                else if (cc == '\r' && nc == '\n' && !quote) { ++row; col = 0; ++c; }
+                else if (cc == '\n' && !quote) { ++row; col = 0; }
+                else { arr[row][col] += cc; }
+            }
+            return arr;
+        }
+
+        // --- HEIGHT REPORTING FUNCTION ---
+        function sendHeight() {
+            const height = document.body.scrollHeight;
+            window.parent.postMessage({ type: 'ttrpg-widget-resize', height: height }, '*');
+        }
+
+        // Init
+        document.addEventListener('DOMContentLoaded', init);
+
+    </script>
+</body>
+</html>
