@@ -4,10 +4,7 @@
   <title>Degenesis Map</title>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <style>
-    body { margin: 0; padding: 0; }
-    #map { width: 100%; height: 1000px; max-height: 80vh; }
-  </style>
+  <style> body { margin: 0; padding: 0; } </style>
   
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
   <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
@@ -19,7 +16,7 @@
 </head>
 <body>
 
-  <div id="map"></div>
+  <div id="map" style="height: 100vh; width: 100vw;"></div>
 
   <script>
     // --- CONFIGURATION ---
@@ -42,8 +39,7 @@
     var bounds = [[0, 0], [mapHeight, mapWidth]];
     var image = L.imageOverlay(mapImageUrl, bounds).addTo(map);
     map.fitBounds(bounds);
-    // Enable pseudoFullscreen as fallback if native API is blocked
-    map.addControl(new L.Control.FullScreen({ pseudoFullscreen: true }));
+    map.addControl(new L.Control.FullScreen());
 
     // --- FEATURE 1: RIGHT CLICK TO GET COORDINATES ---
     map.on('contextmenu', function(e) {
